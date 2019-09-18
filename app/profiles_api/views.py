@@ -3,6 +3,12 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from . import serializers
 from rest_framework import status, viewsets
+from rest_framework.authentication import TokenAuthentication
+from rest_framework import filters
+from rest_framework.authtoken.serializers import AuthTokenSerializer
+from rest_framework.authtoken.views import ObtainAuthToken
+from . import models
+from . import permissions
 
 
 class HelloApiView(APIView):
@@ -101,3 +107,28 @@ class HelloViewSet(viewsets.ViewSet):
         """ Handles deleting an object """
 
         return Response({'http_method':'DELETE'})
+
+
+class UserProfileViewSet(viewsets.ModelViewSet):
+    """ Handles creating, updating and deleting profiles """
+    serializer_class = serializers.UserProfileSerializer
+    queryset = models.UserProfile.objects.all()
+    #Here we add the permissions created any
+    #We create these as tuples, so they are immutable. also to add multiple
+    #Authentications or permissions or filters for searching
+    authentication_classes = (TokenAuthentication,)
+    permission_classes = (permissions.UpdateOwnProfile,)
+    filter_backends = (filters.SearchFilter,)
+    #search with which fields
+    search_fields = ('name', 'email',)
+
+
+class LoginViewSet(viewsets.ViewSet):
+    """ Checks email and password and returns an auth token """
+
+    serializer_class = AuthTokenSerializer
+
+    def create(self, request):
+        """ Use ObtainAuthToken APIView to validate and create authtoken """
+
+        return ObtainAuthToken().post(request)
